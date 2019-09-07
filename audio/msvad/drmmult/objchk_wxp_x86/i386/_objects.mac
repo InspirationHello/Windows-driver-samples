@@ -1,0 +1,27 @@
+
+
+386_OBJECTS=\
+ $(OBJ_PATH)\$O\adapter.obj \
+ $(OBJ_PATH)\$O\basedma.obj \
+ $(OBJ_PATH)\$O\basetopo.obj \
+ $(OBJ_PATH)\$O\basewave.obj \
+ $(OBJ_PATH)\$O\common.obj \
+ $(OBJ_PATH)\$O\hw.obj \
+ $(OBJ_PATH)\$O\kshelper.obj \
+ $(OBJ_PATH)\$O\savedata.obj \
+ $(OBJ_PATH)\$O\mintopo.obj \
+ $(OBJ_PATH)\$O\minwave.obj \
+
+
+_RES_FILE=$(OBJ_PATH)\$O\msvad.res
+
+
+
+# lowercased
+BASEDIR=j:\win7dddk
+OBJECT_ROOT=j:\win7dddk
+MAKEDIR_LOWERCASE=j:\win7dddk\src\audio\msvad\drmmult
+MAKEDIR_RELATIVE_TO_BASEDIR=src\audio\msvad\drmmult
+OBJ_PATH=j:\win7dddk\src\audio\msvad\drmmult
+CONCURRENT_MIDL=0
+CONCURRENT_MANIFEST_BUILD=0
