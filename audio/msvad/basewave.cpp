@@ -1007,6 +1007,8 @@ Return Value:
             break;
         }
 
+        m_SaveData.SetState(NewState);
+
         m_ksState = NewState;
     }
 

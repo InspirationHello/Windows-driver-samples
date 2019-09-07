@@ -17,11 +17,29 @@ to save data to disk.
 #ifndef _MSVAD_SAVEDATA_H
 #define _MSVAD_SAVEDATA_H
 
+#include "savebackend.h"
+
 //-----------------------------------------------------------------------------
 //  Forward declaration
 //-----------------------------------------------------------------------------
 class CSaveData;
 typedef CSaveData *PCSaveData;
+
+
+#define uint8_t UINT8
+#define uint32_t UINT32
+#define int32_t INT32
+#define roundup_pow_of_two RoundupPowOfTwo
+#define rbuf_lock_t KMUTEX // KSPIN_LOCK
+
+typedef struct ring_buffer_ {
+    uint8_t           *data;
+    uint32_t           size, size_mask;
+    uint32_t           rpos;
+    uint32_t           wpos;
+
+    rbuf_lock_t        lock;
+}ring_buffer_t;
 
 
 //-----------------------------------------------------------------------------
@@ -62,6 +80,9 @@ typedef OUTPUT_DATA_HEADER *POUTPUT_DATA_HEADER;
 
 #include <poppack.h>
 
+#define MAX_NR_SAVE_BACKEND (4)
+// #define WORTK_THREAD_MODE
+
 //-----------------------------------------------------------------------------
 //  Classes
 //-----------------------------------------------------------------------------
@@ -78,7 +99,8 @@ protected:
     UNICODE_STRING              m_FileName;         // DataFile name.
     HANDLE                      m_FileHandle;       // DataFile handle.
     PBYTE                       m_pDataBuffer;      // Data buffer.
-    ULONG                       m_ulBufferSize;     // Total buffer size.
+    ULONG                       m_ulBufferSize;     // Total buffer size. must be pow of two
+    ULONG                       m_ulBufferSizeMask; // Buffer size mask.
 
     ULONG                       m_ulFramePtr;       // Current Frame.
     ULONG                       m_ulFrameCount;     // Frame count.
@@ -103,9 +125,73 @@ protected:
 
     BOOL                        m_bInitialized;
 
+    INT64                       m_i64Wpos, m_i64Rpos;
+    volatile ULONG              m_ulTransferChunkSize;
+
+    ring_buffer_t               m_rbuf;
+
+    // for batch read or write: recommend heap value, such as new or malloc.
+    static PCSaveBackend        m_SaveBackends[MAX_NR_SAVE_BACKEND];
+    static INT                  m_SaveBackendsLength;
+
+#ifdef WORTK_THREAD_MODE
+    KEVENT                      m_WakeUpWorker;
+    PKTHREAD                    m_Worker;
+    BOOL                        m_bShutDownWorker;
+
+    friend NTSTATUS
+        CreateWorkerThread(
+            IN PCSaveData  Device
+        );
+    friend VOID
+        SendPcmRoutine(
+            IN PVOID pContext
+        );
+#endif // WORTK_THREAD_MODE
+
+
 public:
     CSaveData();
     ~CSaveData();
+
+    static BOOLEAN              AddSaveBackend
+    (
+        PCSaveBackend           SaveBackend
+    );
+
+    static BOOLEAN              RemoveAllSaveBackend
+    (
+        void
+    );
+
+    NTSTATUS                    SetState
+    (
+        _In_  KSSTATE           NewState
+    );
+
+    static void                 SetVolume
+    (
+        _In_  ULONG             Index,
+        _In_  LONG              Channel,
+        _In_  LONG              Value
+    );
+
+    static LONG                 GetVolume
+    (
+        _In_  ULONG             Index,
+        _In_  LONG              Channel
+    );
+
+    static void                 SetMute
+    (
+        _In_  ULONG             Index,
+        _In_  BOOL              Value
+    );
+
+    static BOOL                GetMute
+    (
+        _In_  ULONG             Index
+    );
 
     static void                 DestroyWorkItems
     (
@@ -149,6 +235,7 @@ public:
         _In_reads_bytes_(ulByteCount)   PBYTE   pBuffer,
         _In_                            ULONG   ulByteCount
     );
+    void                       SendData();
 
 private:
     static NTSTATUS             InitializeWorkItems
@@ -180,11 +267,17 @@ private:
         IN  ULONG               ulDataSize
     );
 
+    UINT32                      BufferAvailSize();
+    UINT32                      BufferFreeSize();
+
     friend VOID                 SaveFrameWorkerCallback
     (
      PDEVICE_OBJECT pDeviceObject,
      IN  PVOID  Context
     );
+
+
+    friend int consume_rbuf_by_vio(uint8_t* buf, size_t len, void *other);
 };
 typedef CSaveData *PCSaveData;
 

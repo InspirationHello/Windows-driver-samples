@@ -22,6 +22,11 @@ Abstract:
 #include <msvad.h>
 #include "common.h"
 
+#include "adapter.h"
+
+#include "savedata.h"
+#include "simple/viosavedata.h"
+
 //-----------------------------------------------------------------------------
 // Defines                                                                    
 //-----------------------------------------------------------------------------
@@ -107,6 +112,92 @@ Return Value:
 }
 
 //=============================================================================
+extern "C" NTSTATUS
+AudioDeviceDriverEntry
+(
+    IN  PDRIVER_OBJECT          DriverObject,
+    IN  PUNICODE_STRING         RegistryPathName
+)
+{
+    /*++
+
+    Routine Description:
+
+      Installable driver initialization entry point.
+      This entry point is called directly by the I/O system.
+
+      All audio adapter drivers can use this code without change.
+
+    Arguments:
+
+      DriverObject - pointer to the driver object
+
+      RegistryPath - pointer to a unicode string representing the path,
+                       to driver-specific key in the registry.
+
+    Return Value:
+
+      STATUS_SUCCESS if successful,
+      STATUS_UNSUCCESSFUL otherwise.
+
+    --*/
+    NTSTATUS                    ntStatus;
+
+    DPF(D_TERSE, ("[AudioDeviceDriverEntry]"));
+
+    // Tell the class driver to initialize the driver.
+    //
+    ntStatus =
+        PcInitializeAdapterDriver
+        (
+            DriverObject,
+            RegistryPathName,
+            (PDRIVER_ADD_DEVICE)AddDevice
+        );
+
+    if (NT_SUCCESS(ntStatus))
+    {
+#pragma warning (push)
+#pragma warning( disable:28169 ) 
+#pragma warning( disable:28023 ) 
+        DriverObject->MajorFunction[IRP_MJ_PNP] = PnpHandler;
+#pragma warning (pop)
+
+        PCSaveBackend backends[1] = { 0 }, saveBackend;
+
+        backends[0] = new (NonPagedPool, MSVAD_POOLTAG)CVioSaveData;
+        // backends[1] = new (NonPagedPool, MSVAD_POOLTAG)CSaveBackend;
+
+        for (int i = 0; i < ARRAYSIZE(backends); ++i) {
+            saveBackend = backends[i];
+
+            if (!saveBackend) {
+                ntStatus = STATUS_INSUFFICIENT_RESOURCES;
+                DPF(D_ERROR, ("[AudioDeviceDriverEntry] Failed to allocate save backend."));
+                
+                break;
+            }
+
+            if (!CSaveData::AddSaveBackend(saveBackend)) {
+                ntStatus = STATUS_INSUFFICIENT_RESOURCES;
+                DPF(D_ERROR, ("[AudioDeviceDriverEntry] Failed to add save backend."));
+                break;
+            }
+        }
+
+        if (!NT_SUCCESS(ntStatus)) {
+            for (int i = 0; i < ARRAYSIZE(backends); ++i) {
+                delete backends[i];
+            }
+        }
+    }
+
+    return ntStatus;
+} // AudioDeviceDriverEntry
+
+#define USE_DRIVER_ENTRY
+#ifdef USE_DRIVER_ENTRY
+
 #pragma code_seg("INIT")
 extern "C" DRIVER_INITIALIZE DriverEntry;
 extern "C" NTSTATUS
@@ -144,26 +235,18 @@ Return Value:
 
     // Tell the class driver to initialize the driver.
     //
-    ntStatus =  
-        PcInitializeAdapterDriver
-        ( 
-            DriverObject,
-            RegistryPathName,
-            (PDRIVER_ADD_DEVICE)AddDevice
+    ntStatus = 
+        AudioDeviceDriverEntry
+        (
+            DriverObject, 
+            RegistryPathName
         );
-
-    if (NT_SUCCESS(ntStatus))
-    {
-#pragma warning (push)
-#pragma warning( disable:28169 ) 
-#pragma warning( disable:28023 ) 
-        DriverObject->MajorFunction[IRP_MJ_PNP] = PnpHandler;
-#pragma warning (pop)
-    }
 
     return ntStatus;
 } // DriverEntry
 #pragma code_seg()
+
+#endif
 
 // disable prefast warning 28152 because 
 // DO_DEVICE_INITIALIZING is cleared in PcAddAdapterDevice

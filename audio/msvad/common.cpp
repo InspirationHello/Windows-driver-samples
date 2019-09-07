@@ -1789,6 +1789,8 @@ Return Value:
     {
         m_pHW->SetMixerMute(Index, Value);
     }
+
+    CSaveData::SetMute(Index, Value);
 } // MixerMuteWrite
 
 //=============================================================================
@@ -1880,7 +1882,7 @@ Return Value:
         return m_pHW->GetMixerVolume(Index, Channel);
     }
 
-    return 0;
+    return CSaveData::GetVolume(Index, Channel);
 } // MixerVolumeRead
 
 //=============================================================================
@@ -1915,6 +1917,8 @@ Return Value:
     {
         m_pHW->SetMixerVolume(Index, Channel, Value);
     }
+
+    CSaveData::SetVolume(Index, Channel, Value);
 } // MixerVolumeWrite
 
 //=============================================================================
