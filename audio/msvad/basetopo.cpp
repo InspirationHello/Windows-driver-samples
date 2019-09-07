@@ -79,12 +79,13 @@ Return Value:
 NTSTATUS
 CMiniportTopologyMSVAD::DataRangeIntersection
 ( 
-    IN  ULONG                   PinId,
-    IN  PKSDATARANGE            ClientDataRange,
-    IN  PKSDATARANGE            MyDataRange,
-    IN  ULONG                   OutputBufferLength,
-    OUT PVOID                   ResultantFormat     OPTIONAL,
-    OUT PULONG                  ResultantFormatLength 
+    _In_        ULONG                   PinId,
+    _In_        PKSDATARANGE            ClientDataRange,
+    _In_        PKSDATARANGE            MyDataRange,
+    _In_        ULONG                   OutputBufferLength,
+    _Out_writes_bytes_to_opt_(OutputBufferLength, *ResultantFormatLength)
+                PVOID                   ResultantFormat,
+    _Out_       PULONG                  ResultantFormatLength 
 )
 /*++
 
@@ -137,7 +138,7 @@ Return Value:
 NTSTATUS
 CMiniportTopologyMSVAD::GetDescription
 ( 
-    OUT PPCFILTER_DESCRIPTOR *  OutFilterDescriptor 
+    _Out_ PPCFILTER_DESCRIPTOR *  OutFilterDescriptor 
 )
 /*++
 
@@ -451,7 +452,6 @@ Return Value:
     DPF_ENTER(("[%s]",__FUNCTION__));
 
     NTSTATUS                    ntStatus;
-    LONG                        lChannel;
     PBOOL                       pfMute;
 
     if (PropertyRequest->Verb & KSPROPERTY_TYPE_BASICSUPPORT)
@@ -475,7 +475,9 @@ Return Value:
             );
         if (NT_SUCCESS(ntStatus))
         {
-            lChannel = * PLONG (PropertyRequest->Instance);
+            // If the channel index is needed, it is supplied in the Instance parameter
+            // LONG lChannel = * PLONG (PropertyRequest->Instance);
+            //
             pfMute   = PBOOL (PropertyRequest->Value);
 
             if (PropertyRequest->Verb & KSPROPERTY_TYPE_GET)

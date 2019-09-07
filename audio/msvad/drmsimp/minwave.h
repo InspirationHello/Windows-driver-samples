@@ -15,6 +15,11 @@ Abstract:
 #ifndef _MSVAD_MINWAVE_H_
 #define _MSVAD_MINWAVE_H_
 
+// Disable the 28204 warning due to annotation mismatches between DDK headers
+// for QueryInterface().
+//
+#pragma warning(disable:28204)
+
 #include "basewave.h"
 
 //=============================================================================

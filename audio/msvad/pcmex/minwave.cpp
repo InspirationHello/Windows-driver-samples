@@ -33,6 +33,9 @@ CreateMiniportWaveCyclicMSVAD
     OUT PUNKNOWN *              Unknown,
     IN  REFCLSID,
     IN  PUNKNOWN                UnknownOuter OPTIONAL,
+    _When_((PoolType & NonPagedPoolMustSucceed) != 0,
+       __drv_reportError("Must succeed pool allocations are forbidden. "
+			 "Allocation failures cause a system crash"))
     IN  POOL_TYPE               PoolType 
 )
 /*++
@@ -93,12 +96,13 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::DataRangeIntersection
 ( 
-    IN  ULONG                       PinId,
-    IN  PKSDATARANGE                ClientDataRange,
-    IN  PKSDATARANGE                MyDataRange,
-    IN  ULONG                       OutputBufferLength,
-    OUT PVOID                       ResultantFormat,
-    OUT PULONG                      ResultantFormatLength 
+    _In_        ULONG           PinId,
+    _In_        PKSDATARANGE    ClientDataRange,
+    _In_        PKSDATARANGE    MyDataRange,
+    _In_        ULONG           OutputBufferLength,
+    _Out_writes_bytes_to_opt_(OutputBufferLength, *ResultantFormatLength)
+                PVOID           ResultantFormat,
+    _Out_       PULONG          ResultantFormatLength 
 )
 /*++
 
@@ -147,7 +151,7 @@ Arguments:
     // Check the size of output buffer. Note that we are returning
     // WAVEFORMATPCMEX.
     //
-    if (!OutputBufferLength) 
+    if (!OutputBufferLength || !ResultantFormat) 
     {
         *ResultantFormatLength = sizeof(KSDATAFORMAT) + sizeof(WAVEFORMATPCMEX);
         return STATUS_BUFFER_OVERFLOW;
@@ -158,9 +162,16 @@ Arguments:
         return STATUS_BUFFER_TOO_SMALL;
     }
 
+#pragma warning(push)
+    // CMiniportWaveCyclic::DataRangeIntersection's annotation on ResultantFormat is Out_opt_ with buffer 
+    // length OutputBufferLength. If we get to this point, then ResultantFormat != NULL and buffer length 
+    // OutputBufferLength is larger enough to hold data of size KSDATAFORMAT, so supress the warning.
+    //
+#pragma warning(disable:6386)
     // Fill in the structure the datarange structure.
     //
     RtlCopyMemory(ResultantFormat, MyDataRange, sizeof(KSDATAFORMAT));
+#pragma warning (pop)
 
     // Modify the size of the data format structure to fit the WAVEFORMATPCMEX
     // structure.
@@ -177,14 +188,14 @@ Arguments:
     // supported channel counts.
     pWfxExt->Format.nChannels = 
         (WORD)min(((PKSDATARANGE_AUDIO) ClientDataRange)->MaximumChannels, 
-                  ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumChannels);
+                    ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumChannels);
 
 
     // Ensure that the returned sample rate falls within the supported range
     // of sample rates from our data range.
     if((((PKSDATARANGE_AUDIO) ClientDataRange)->MaximumSampleFrequency <
         ((PKSDATARANGE_AUDIO) MyDataRange)->MinimumSampleFrequency) ||
-       (((PKSDATARANGE_AUDIO) ClientDataRange)->MinimumSampleFrequency >
+        (((PKSDATARANGE_AUDIO) ClientDataRange)->MinimumSampleFrequency >
         ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumSampleFrequency))
     {
         DPF(D_TERSE, ("[No intersection in sample rate ranges]"));
@@ -198,7 +209,7 @@ Arguments:
     // range of bit depths from our data range.
     if((((PKSDATARANGE_AUDIO) ClientDataRange)->MaximumBitsPerSample <
         ((PKSDATARANGE_AUDIO) MyDataRange)->MinimumBitsPerSample) ||
-       (((PKSDATARANGE_AUDIO) ClientDataRange)->MinimumBitsPerSample >
+        (((PKSDATARANGE_AUDIO) ClientDataRange)->MinimumBitsPerSample >
         ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumBitsPerSample))
     {
         DPF(D_TERSE, ("[No intersection in bits per sample ranges]"));
@@ -206,7 +217,7 @@ Arguments:
     }
     pWfxExt->Format.wBitsPerSample = 
         (WORD)min(((PKSDATARANGE_AUDIO) ClientDataRange)->MaximumBitsPerSample,
-                  ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumBitsPerSample);
+                    ((PKSDATARANGE_AUDIO) MyDataRange)->MaximumBitsPerSample);
 
     // Fill in the rest of the format
     pWfxExt->Format.nBlockAlign = 
@@ -285,7 +296,7 @@ Arguments:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::GetDescription
 ( 
-    OUT PPCFILTER_DESCRIPTOR * OutFilterDescriptor 
+    _Out_ PPCFILTER_DESCRIPTOR * OutFilterDescriptor 
 )
 /*++
 
@@ -318,9 +329,9 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::Init
 ( 
-    IN  PUNKNOWN                UnknownAdapter_,
-    IN  PRESOURCELIST           ResourceList_,
-    IN  PPORTWAVECYCLIC         Port_ 
+    _In_  PUNKNOWN                UnknownAdapter_,
+    _In_  PRESOURCELIST           ResourceList_,
+    _In_  PPORTWAVECYCLIC         Port_ 
 )
 /*++
 
@@ -389,17 +400,18 @@ Return Value:
 } // Init
 
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::NewStream
 ( 
-    OUT PMINIPORTWAVECYCLICSTREAM * OutStream,
-    IN  PUNKNOWN                OuterUnknown,
-    IN  POOL_TYPE               PoolType,
-    IN  ULONG                   Pin,
-    IN  BOOLEAN                 Capture,
-    IN  PKSDATAFORMAT           DataFormat,
-    OUT PDMACHANNEL *           OutDmaChannel,
-    OUT PSERVICEGROUP *         OutServiceGroup 
+    PMINIPORTWAVECYCLICSTREAM * OutStream,
+    PUNKNOWN                OuterUnknown,
+    POOL_TYPE               PoolType,
+    ULONG                   Pin,
+    BOOLEAN                 Capture,
+    PKSDATAFORMAT           DataFormat,
+    PDMACHANNEL *           OutDmaChannel,
+    PSERVICEGROUP *         OutServiceGroup 
 )
 /*++
 
@@ -539,8 +551,8 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::NonDelegatingQueryInterface
 ( 
-    IN  REFIID  Interface,
-    OUT PVOID * Object 
+    _In_         REFIID  Interface,
+    _COM_Outptr_ PVOID * Object 
 )
 /*++
 
@@ -993,8 +1005,8 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclicStream::NonDelegatingQueryInterface
 ( 
-    IN  REFIID  Interface,
-    OUT PVOID * Object 
+    _In_         REFIID  Interface,
+    _COM_Outptr_ PVOID * Object 
 )
 /*++
 

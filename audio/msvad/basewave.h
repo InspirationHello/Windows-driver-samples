@@ -79,13 +79,13 @@ public:
 
     STDMETHODIMP                GetDescription
     (   
-        OUT PPCFILTER_DESCRIPTOR *Description
+        _Out_   PPCFILTER_DESCRIPTOR *Description
     );
 
     STDMETHODIMP                Init
-    (   IN PUNKNOWN             UnknownAdapter,
-        IN PRESOURCELIST        ResourceList,
-        IN PPORTWAVECYCLIC      Port
+    (   _In_    PUNKNOWN             UnknownAdapter,
+        _In_    PRESOURCELIST        ResourceList,
+        _In_    PPORTWAVECYCLIC      Port
     );
 
     NTSTATUS                    PropertyHandlerCpuResources

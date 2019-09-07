@@ -49,6 +49,9 @@ CreateMiniportTopologyMSVAD
     OUT PUNKNOWN *              Unknown,
     IN  REFCLSID,
     IN  PUNKNOWN                UnknownOuter OPTIONAL,
+    _When_((PoolType & NonPagedPoolMustSucceed) != 0,
+       __drv_reportError("Must succeed pool allocations are forbidden. "
+			 "Allocation failures cause a system crash"))
     IN  POOL_TYPE               PoolType 
 )
 /*++
@@ -108,12 +111,13 @@ Return Value:
 NTSTATUS
 CMiniportTopology::DataRangeIntersection
 ( 
-    IN  ULONG                   PinId,
-    IN  PKSDATARANGE            ClientDataRange,
-    IN  PKSDATARANGE            MyDataRange,
-    IN  ULONG                   OutputBufferLength,
-    OUT PVOID                   ResultantFormat     OPTIONAL,
-    OUT PULONG                  ResultantFormatLength 
+    _In_        ULONG                   PinId,
+    _In_        PKSDATARANGE            ClientDataRange,
+    _In_        PKSDATARANGE            MyDataRange,
+    _In_        ULONG                   OutputBufferLength,
+    _Out_writes_bytes_to_opt_(OutputBufferLength, *ResultantFormatLength)
+                PVOID                   ResultantFormat     OPTIONAL,
+    _Out_       PULONG                  ResultantFormatLength 
 )
 /*++
 
@@ -166,7 +170,7 @@ Return Value:
 STDMETHODIMP
 CMiniportTopology::GetDescription
 ( 
-    OUT PPCFILTER_DESCRIPTOR *  OutFilterDescriptor 
+    _Out_ PPCFILTER_DESCRIPTOR *  OutFilterDescriptor 
 )
 /*++
 
@@ -197,9 +201,9 @@ Return Value:
 STDMETHODIMP
 CMiniportTopology::Init
 ( 
-    IN PUNKNOWN                 UnknownAdapter,
-    IN PRESOURCELIST            ResourceList,
-    IN PPORTTOPOLOGY            Port_ 
+    _In_ PUNKNOWN                 UnknownAdapter,
+    _In_ PRESOURCELIST            ResourceList,
+    _In_ PPORTTOPOLOGY            Port_ 
 )
 /*++
 
@@ -255,8 +259,8 @@ Return Value:
 STDMETHODIMP
 CMiniportTopology::NonDelegatingQueryInterface
 ( 
-    IN  REFIID                  Interface,
-    OUT PVOID                   * Object 
+    _In_         REFIID                  Interface,
+    _COM_Outptr_ PVOID                   * Object 
 )
 /*++
 
@@ -376,27 +380,27 @@ Return Value:
                         PKSAUDIO_MIC_ARRAY_GEOMETRY pMAG = (PKSAUDIO_MIC_ARRAY_GEOMETRY)PropertyRequest->Value;
 
                         // fill in mic array geometry fields
-                        pMAG->usVersion = 0x0100;           // Version of Mic array specification (0x0100)
+                        pMAG->usVersion = 0x0100;               // Version of Mic array specification (0x0100)
                         pMAG->usMicArrayType = (USHORT)KSMICARRAY_MICARRAYTYPE_LINEAR;        // Type of Mic Array
-                        pMAG->wVerticalAngleBegin = -7854;  // Work Volume Vertical Angle Begin (-45 degrees)
-                        pMAG->wVerticalAngleEnd   =  7854;  // Work Volume Vertical Angle End   (+45 degrees)
-                        pMAG->wHorizontalAngleBegin = 0;    // Work Volume HorizontalAngle Begin
-                        pMAG->wHorizontalAngleEnd   = 0;    // Work Volume HorizontalAngle End
-                        pMAG->usFrequencyBandLo = 100;      // Low end of Freq Range
-                        pMAG->usFrequencyBandHi = 8000;     // High end of Freq Range
+                        pMAG->wVerticalAngleBegin = -7854;      // Work Volume Vertical Angle Begin (-45 degrees)
+                        pMAG->wVerticalAngleEnd   =  7854;      // Work Volume Vertical Angle End   (+45 degrees)
+                        pMAG->wHorizontalAngleBegin = -7854;    // Work Volume HorizontalAngle Begin (-45 degrees)
+                        pMAG->wHorizontalAngleEnd   = 7854;     // Work Volume HorizontalAngle End   (+45 degrees)
+                        pMAG->usFrequencyBandLo = 100;          // Low end of Freq Range
+                        pMAG->usFrequencyBandHi = 8000;         // High end of Freq Range
                         
-                        pMAG->usNumberOfMicrophones = 2;    // Count of microphone coordinate structures to follow.
+                        pMAG->usNumberOfMicrophones = 2;        // Count of microphone coordinate structures to follow.
 
                         pMAG->KsMicCoord[0].usType = (USHORT)KSMICARRAY_MICTYPE_CARDIOID;          
-                        pMAG->KsMicCoord[0].wXCoord = -100; // mic elements are 200 mm apart
-                        pMAG->KsMicCoord[0].wYCoord = 0;         
+                        pMAG->KsMicCoord[0].wXCoord = 0;
+                        pMAG->KsMicCoord[0].wYCoord = -100;     // mic elements are 200 mm apart;         
                         pMAG->KsMicCoord[0].wZCoord = 0;         
                         pMAG->KsMicCoord[0].wVerticalAngle = 0;  
                         pMAG->KsMicCoord[0].wHorizontalAngle = 0;
 
                         pMAG->KsMicCoord[1].usType = (USHORT)KSMICARRAY_MICTYPE_CARDIOID;          
-                        pMAG->KsMicCoord[1].wXCoord = 100;  // mic elements are 200 mm apart
-                        pMAG->KsMicCoord[1].wYCoord = 0;         
+                        pMAG->KsMicCoord[1].wXCoord = 0;
+                        pMAG->KsMicCoord[1].wYCoord = 100;      // mic elements are 200 mm apart         
                         pMAG->KsMicCoord[1].wZCoord = 0;         
                         pMAG->KsMicCoord[1].wVerticalAngle = 0;  
                         pMAG->KsMicCoord[1].wHorizontalAngle = 0;

@@ -162,32 +162,10 @@ PCPROPERTY_ITEM PropertiesVolume[] =
     KSPROPERTY_AUDIO_VOLUMELEVEL,
     KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_SET | KSPROPERTY_TYPE_BASICSUPPORT,
     PropertyHandler_Wave
-  },
-  {
-    &KSPROPSETID_Audio,
-    KSPROPERTY_AUDIO_CPU_RESOURCES,
-    KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT,
-    PropertyHandler_Wave
   }
 };
 
 DEFINE_PCAUTOMATION_TABLE_PROP(AutomationVolume, PropertiesVolume);
-
-//=============================================================================
-// TODO This needs more properties.
-
-static
-PCPROPERTY_ITEM PropertiesSuperMix[] =
-{
-  {
-    &KSPROPSETID_Audio,
-    KSPROPERTY_AUDIO_CPU_RESOURCES,
-    KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT,
-    PropertyHandler_Wave
-  }
-};
-
-DEFINE_PCAUTOMATION_TABLE_PROP(AutomationSuperMix, PropertiesSuperMix);
 
 //=============================================================================
 // TODO This needs more properties.
@@ -200,31 +178,10 @@ PCPROPERTY_ITEM PropertiesSrc[] =
     KSPROPERTY_AUDIO_SAMPLING_RATE,
     KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT,
     PropertyHandler_Wave
-  },
-  {
-    &KSPROPSETID_Audio,
-    KSPROPERTY_AUDIO_CPU_RESOURCES,
-    KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT,
-    PropertyHandler_Wave
   }
 };
 
 DEFINE_PCAUTOMATION_TABLE_PROP(AutomationSrc, PropertiesSrc);
-
-//=============================================================================
-static
-PCPROPERTY_ITEM PropertiesSum[] =
-{
-  {
-    &KSPROPSETID_Audio,
-    KSPROPERTY_AUDIO_CPU_RESOURCES,
-    KSPROPERTY_TYPE_GET | KSPROPERTY_TYPE_BASICSUPPORT,
-    PropertyHandler_Wave
-  }
-};
-
-DEFINE_PCAUTOMATION_TABLE_PROP(AutomationSum, PropertiesSum);
-
 
 //=============================================================================
 static
@@ -254,7 +211,7 @@ PCNODE_DESCRIPTOR MiniportNodes[] =
     // KSNODE_WAVE_SUPERMIX
     {
         0,                      // Flags
-        &AutomationSuperMix,    // AutomationTable
+        NULL,                   // AutomationTable
         &KSNODETYPE_SUPERMIX,   // Type
         NULL                    // Name
     },
@@ -275,7 +232,7 @@ PCNODE_DESCRIPTOR MiniportNodes[] =
     // KSNODE_WAVE_SUM
     {
         0,                      // Flags
-        &AutomationSum,         // AutomationTable
+        NULL,                   // AutomationTable
         &KSNODETYPE_SUM,        // Type
         NULL                    // Name
     },

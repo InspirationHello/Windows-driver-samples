@@ -109,7 +109,7 @@ Return Value:
 STDMETHODIMP
 CMiniportWaveCyclicMSVAD::GetDescription
 (
-    OUT PPCFILTER_DESCRIPTOR * OutFilterDescriptor
+    _Out_ PPCFILTER_DESCRIPTOR * OutFilterDescriptor
 )
 /*++
 
@@ -143,9 +143,9 @@ Return Value:
 STDMETHODIMP
 CMiniportWaveCyclicMSVAD::Init
 (
-    IN  PUNKNOWN                UnknownAdapter_,
-    IN  PRESOURCELIST           ResourceList_,
-    IN  PPORTWAVECYCLIC         Port_
+    _In_    PUNKNOWN                UnknownAdapter_,
+    _In_    PRESOURCELIST           ResourceList_,
+    _In_    PPORTWAVECYCLIC         Port_
 )
 /*++
 
@@ -501,6 +501,11 @@ Return Value:
         ExFreePoolWithTag(m_pTimer, MSVAD_POOLTAG);
     }
 
+    // Since we just cancelled the timer, wait for all queued DPCs to complete
+    // before we free the DPC.
+    //
+    KeFlushQueuedDpcs();
+
     if (m_pDpc)
     {
         ExFreePoolWithTag( m_pDpc, MSVAD_POOLTAG );
@@ -512,6 +517,8 @@ Return Value:
 } // ~CMiniportWaveCyclicStreamMSVAD
 
 //=============================================================================
+#pragma warning (push)
+#pragma warning (disable : 26165)
 NTSTATUS
 CMiniportWaveCyclicStreamMSVAD::Init
 (
@@ -667,6 +674,7 @@ Return Value:
 
     return ntStatus;
 } // Init
+#pragma warning (pop)
 
 #pragma code_seg()
 
@@ -678,7 +686,7 @@ Return Value:
 STDMETHODIMP
 CMiniportWaveCyclicStreamMSVAD::GetPosition
 (
-    OUT PULONG                  Position
+    _Out_ PULONG                  Position
 )
 /*++
 
@@ -757,7 +765,7 @@ Return Value:
 STDMETHODIMP
 CMiniportWaveCyclicStreamMSVAD::NormalizePhysicalPosition
 (
-    IN OUT PLONGLONG            PhysicalPosition
+    _Inout_ PLONGLONG            PhysicalPosition
 )
 /*++
 
@@ -792,7 +800,7 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclicStreamMSVAD::SetFormat
 (
-    IN  PKSDATAFORMAT           Format
+    _In_  PKSDATAFORMAT           Format
 )
 /*++
 
@@ -864,8 +872,8 @@ Return Value:
 STDMETHODIMP_(ULONG)
 CMiniportWaveCyclicStreamMSVAD::SetNotificationFreq
 (
-    IN  ULONG                   Interval,
-    OUT PULONG                  FramingSize
+    _In_  ULONG                   Interval,
+    _Out_ PULONG                  FramingSize
 )
 /*++
 
@@ -909,7 +917,7 @@ Return Value:
 STDMETHODIMP
 CMiniportWaveCyclicStreamMSVAD::SetState
 (
-    IN  KSSTATE                 NewState
+    _In_  KSSTATE                 NewState
 )
 /*++
 
@@ -1008,11 +1016,12 @@ Return Value:
 #pragma code_seg()
 
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(void)
 CMiniportWaveCyclicStreamMSVAD::Silence
 (
-    __out_bcount(ByteCount) PVOID Buffer,
-    IN ULONG                    ByteCount
+    PVOID Buffer,
+    ULONG                    ByteCount
 )
 /*++
 

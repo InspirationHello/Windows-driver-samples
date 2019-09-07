@@ -20,11 +20,12 @@ Abstract:
 
 #pragma code_seg("PAGE")
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclicStreamMSVAD::AllocateBuffer
 (
-    IN ULONG                    BufferSize,
-    IN PPHYSICAL_ADDRESS        PhysicalAddressConstraint OPTIONAL
+    ULONG                    BufferSize,
+    PPHYSICAL_ADDRESS        PhysicalAddressConstraint OPTIONAL
 )
 /*++
 
@@ -139,12 +140,13 @@ Return Value:
 } // BufferSize
 
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(void)
 CMiniportWaveCyclicStreamMSVAD::CopyFrom
 (
-    IN  PVOID                   Destination,
-    IN  PVOID                   Source,
-    IN  ULONG                   ByteCount
+    PVOID                   Destination,
+    PVOID                   Source,
+    ULONG                   ByteCount
 )
 /*++
 
@@ -173,12 +175,13 @@ Return Value:
 } // CopyFrom
 
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(void)
 CMiniportWaveCyclicStreamMSVAD::CopyTo
 (
-    IN  PVOID                   Destination,
-    IN  PVOID                   Source,
-    IN  ULONG                   ByteCount
+    PVOID                   Destination,
+    PVOID                   Source,
+    ULONG                   ByteCount
 /*++
 
 Routine Description:
@@ -330,7 +333,7 @@ Return Value:
 STDMETHODIMP_(void)
 CMiniportWaveCyclicStreamMSVAD::SetBufferSize
 (
-    IN ULONG                    BufferSize
+    _In_ ULONG                    BufferSize
 )
 /*++
 
@@ -416,3 +419,4 @@ Return Value:
 
     return m_ulDmaBufferSize;
 }
+

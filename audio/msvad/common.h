@@ -48,6 +48,26 @@ DECLARE_INTERFACE_(IAdapterCommon, IUnknown)
         IN PSERVICEGROUP        ServiceGroup 
     ) PURE;
 
+    STDMETHOD_(NTSTATUS,        InstantiateDevices)
+    (
+        THIS
+    ) PURE;
+
+    STDMETHOD_(NTSTATUS,        UninstantiateDevices)
+    (
+        THIS
+    ) PURE;
+
+    STDMETHOD_(NTSTATUS,        Plugin)
+    (
+        THIS
+    ) PURE;
+
+    STDMETHOD_(NTSTATUS,        Unplug)
+    (
+        THIS
+    ) PURE;
+
     STDMETHOD_(PUNKNOWN *,      WavePortDriverDest) 
     ( 
         THIS 
@@ -129,6 +149,27 @@ DECLARE_INTERFACE_(IAdapterCommon, IUnknown)
     ( 
         THIS 
     ) PURE;
+
+    STDMETHOD_(BOOL,            IsInstantiated) 
+    ( 
+        THIS 
+    ) PURE;
+
+    STDMETHOD_(BOOL,            IsPluggedIn) 
+    ( 
+        THIS 
+    ) PURE;
+
+    STDMETHOD_(NTSTATUS,        SetInstantiateWorkItem)
+    (
+        THIS_
+        _In_ __drv_aliasesMem   PIO_WORKITEM    WorkItem
+    ) PURE;
+
+    STDMETHOD_(NTSTATUS,        FreeInstantiateWorkItem)
+    (
+        THIS_
+    ) PURE;
 };
 typedef IAdapterCommon *PADAPTERCOMMON;
 
@@ -141,6 +182,9 @@ NewAdapterCommon
     OUT PUNKNOWN *              Unknown,
     IN  REFCLSID,
     IN  PUNKNOWN                UnknownOuter OPTIONAL,
+    _When_((PoolType & NonPagedPoolMustSucceed) != 0,
+       __drv_reportError("Must succeed pool allocations are forbidden. "
+			 "Allocation failures cause a system crash"))
     IN  POOL_TYPE               PoolType 
 );
 

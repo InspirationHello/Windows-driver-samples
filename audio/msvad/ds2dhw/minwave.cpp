@@ -33,6 +33,9 @@ CreateMiniportWaveCyclicMSVAD
     OUT PUNKNOWN *              Unknown,
     IN  REFCLSID,
     IN  PUNKNOWN                UnknownOuter OPTIONAL,
+    _When_((PoolType & NonPagedPoolMustSucceed) != 0,
+       __drv_reportError("Must succeed pool allocations are forbidden. "
+			 "Allocation failures cause a system crash"))
     IN  POOL_TYPE               PoolType 
 )
 /*++
@@ -93,12 +96,13 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::DataRangeIntersection
 ( 
-    IN  ULONG                       PinId,
-    IN  PKSDATARANGE                ClientDataRange,
-    IN  PKSDATARANGE                MyDataRange,
-    IN  ULONG                       OutputBufferLength,
-    OUT PVOID                       ResultantFormat,
-    OUT PULONG                      ResultantFormatLength 
+    _In_        ULONG                       PinId,
+    _In_        PKSDATARANGE                ClientDataRange,
+    _In_        PKSDATARANGE                MyDataRange,
+    _In_        ULONG                       OutputBufferLength,
+    _Out_writes_bytes_to_opt_(OutputBufferLength, *ResultantFormatLength)
+                PVOID                       ResultantFormat,
+    _Out_       PULONG                      ResultantFormatLength 
 )
 /*++
 
@@ -155,7 +159,7 @@ Arguments:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::GetDescription
 ( 
-    OUT PPCFILTER_DESCRIPTOR * OutFilterDescriptor 
+    _Out_ PPCFILTER_DESCRIPTOR * OutFilterDescriptor 
 )
 /*++
 
@@ -188,9 +192,9 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::Init
 ( 
-    IN  PUNKNOWN                UnknownAdapter_,
-    IN  PRESOURCELIST           ResourceList_,
-    IN  PPORTWAVECYCLIC         Port_ 
+    _In_  PUNKNOWN                UnknownAdapter_,
+    _In_  PRESOURCELIST           ResourceList_,
+    _In_  PPORTWAVECYCLIC         Port_ 
 )
 /*++
 
@@ -261,17 +265,18 @@ Return Value:
 } // Init
 
 //=============================================================================
+_Use_decl_annotations_
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::NewStream
 ( 
-    OUT PMINIPORTWAVECYCLICSTREAM * OutStream,
-    IN  PUNKNOWN                OuterUnknown,
-    IN  POOL_TYPE               PoolType,
-    IN  ULONG                   Pin,
-    IN  BOOLEAN                 Capture,
-    IN  PKSDATAFORMAT           DataFormat,
-    OUT PDMACHANNEL *           OutDmaChannel,
-    OUT PSERVICEGROUP *         OutServiceGroup 
+    PMINIPORTWAVECYCLICSTREAM * OutStream,
+    PUNKNOWN                OuterUnknown,
+    POOL_TYPE               PoolType,
+    ULONG                   Pin,
+    BOOLEAN                 Capture,
+    PKSDATAFORMAT           DataFormat,
+    PDMACHANNEL *           OutDmaChannel,
+    PSERVICEGROUP *         OutServiceGroup 
 )
 /*++
 
@@ -422,8 +427,8 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclic::NonDelegatingQueryInterface
 ( 
-    IN  REFIID  Interface,
-    OUT PVOID * Object 
+    _In_         REFIID  Interface,
+    _COM_Outptr_ PVOID * Object 
 )
 /*++
 
@@ -678,8 +683,8 @@ Return Value:
 STDMETHODIMP_(NTSTATUS)
 CMiniportWaveCyclicStream::NonDelegatingQueryInterface
 ( 
-    IN  REFIID  Interface,
-    OUT PVOID * Object 
+    _In_         REFIID  Interface,
+    _COM_Outptr_ PVOID * Object 
 )
 /*++
 

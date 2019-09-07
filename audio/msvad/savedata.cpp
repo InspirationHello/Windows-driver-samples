@@ -20,6 +20,7 @@ Abstract:
 
 --*/
 #pragma warning (disable : 4127)
+#pragma warning (disable : 26165)
 
 #include <msvad.h>
 #include "savedata.h"
@@ -65,8 +66,10 @@ CSaveData::CSaveData()
     m_fWriteDisabled(FALSE),
     m_bInitialized(FALSE)
 {
+
     PAGED_CODE();
 
+    m_waveFormat = NULL;
     m_FileHeader.dwRiff           = RIFF_TAG;
     m_FileHeader.dwFileSize       = 0;
     m_FileHeader.dwWave           = WAVE_TAG;
@@ -100,11 +103,23 @@ CSaveData::~CSaveData()
                                      m_FileHeader.dwFormatLength -
                                      sizeof(m_DataHeader);
 
-        if (NT_SUCCESS(FileOpen(FALSE)))
+        if (STATUS_SUCCESS == KeWaitForSingleObject
+            (
+                &m_FileSync,
+                Executive,
+                KernelMode,
+                FALSE,
+                NULL
+            ))
         {
-            FileWriteHeader();
+            if (NT_SUCCESS(FileOpen(FALSE)))
+            {
+                FileWriteHeader();
 
-            FileClose();
+                FileClose();
+            }
+
+            KeReleaseMutex(&m_FileSync, FALSE);
         }
     }
 
@@ -235,8 +250,8 @@ CSaveData::FileOpen
 NTSTATUS
 CSaveData::FileWrite
 (
-    IN  PBYTE                   pData,
-    IN  ULONG                   ulDataSize
+    _In_reads_bytes_(ulDataSize)    PBYTE   pData,
+    _In_                            ULONG   ulDataSize
 )
 {
     PAGED_CODE();
@@ -498,6 +513,10 @@ CSaveData::Initialize
     //
     KeInitializeSpinLock ( &m_FrameInUseSpinLock ) ;
 
+    // Initialize the file mutex
+    //
+    KeInitializeMutex( &m_FileSync, 1 ) ;
+
     // Open the data file.
     //
     if (NT_SUCCESS(ntStatus))
@@ -521,12 +540,26 @@ CSaveData::Initialize
         m_bInitialized = TRUE;
 
         // Write wave header information to data file.
-        ntStatus = FileOpen(TRUE);
-        if (NT_SUCCESS(ntStatus))
-        {
-            ntStatus = FileWriteHeader();
+        ntStatus = KeWaitForSingleObject
+            (
+                &m_FileSync,
+                Executive,
+                KernelMode,
+                FALSE,
+                NULL
+            );
 
-            FileClose();
+        if (STATUS_SUCCESS == ntStatus)
+        {
+            ntStatus = FileOpen(TRUE);
+            if (NT_SUCCESS(ntStatus))
+            {
+                ntStatus = FileWriteHeader();
+
+                FileClose();
+            }
+
+            KeReleaseMutex( &m_FileSync, FALSE );
         }
     }
 
@@ -547,6 +580,11 @@ CSaveData::InitializeWorkItems
     NTSTATUS                    ntStatus = STATUS_SUCCESS;
 
     DPF_ENTER(("[CSaveData::InitializeWorkItems]"));
+
+    if (m_pWorkItems)
+    {
+        return ntStatus;
+    }
 
     m_pWorkItems = (PSAVEWORKER_PARAM)
         ExAllocatePoolWithTag
@@ -600,6 +638,14 @@ SaveFrameWorkerCallback
     PSAVEWORKER_PARAM           pParam = (PSAVEWORKER_PARAM) Context;
     PCSaveData                  pSaveData;
 
+    if (NULL == pParam)
+    {
+        // This is completely unexpected, assert here.
+        //
+        ASSERT(pParam);
+        return;
+    }
+
     DPF(D_VERBOSE, ("[SaveFrameWorkerCallback], %d", pParam->ulFrameNo));
 
     ASSERT(pParam->pSaveData);
@@ -607,14 +653,26 @@ SaveFrameWorkerCallback
 
     if (pParam->WorkItem)
     {
-     pSaveData = pParam->pSaveData;
+        pSaveData = pParam->pSaveData;
 
-     if (NT_SUCCESS(pSaveData->FileOpen(FALSE)))
-     { 
-         pSaveData->FileWrite(pParam->pData, pParam->ulDataSize);
-         pSaveData->FileClose();
-      }
-      InterlockedExchange( (LONG *)&(pSaveData->m_fFrameUsed[pParam->ulFrameNo]), FALSE );
+        if (STATUS_SUCCESS == KeWaitForSingleObject
+            (
+                &pSaveData->m_FileSync,
+                Executive,
+                KernelMode,
+                FALSE,
+                NULL
+            ))
+        {
+            if (NT_SUCCESS(pSaveData->FileOpen(FALSE)))
+            { 
+                pSaveData->FileWrite(pParam->pData, pParam->ulDataSize);
+                pSaveData->FileClose();
+            }
+            InterlockedExchange( (LONG *)&(pSaveData->m_fFrameUsed[pParam->ulFrameNo]), FALSE );
+
+            KeReleaseMutex( &pSaveData->m_FileSync, FALSE );
+        }
     }
 
     KeSetEvent(&pParam->EventDone, 0, FALSE);
@@ -686,8 +744,8 @@ CSaveData::SetDataFormat
 void
 CSaveData::ReadData
 (
-    IN PBYTE                    pBuffer,
-    IN ULONG                    ulByteCount
+    _Inout_updates_bytes_all_(ulByteCount)  PBYTE   pBuffer,
+    _In_                                    ULONG   ulByteCount
 )
 {
     UNREFERENCED_PARAMETER(pBuffer);
@@ -757,8 +815,8 @@ CSaveData::WaitAllWorkItems
 void
 CSaveData::WriteData
 (
-    IN  PBYTE                   pBuffer,
-    IN  ULONG                   ulByteCount
+    _In_reads_bytes_(ulByteCount)   PBYTE   pBuffer,
+    _In_                            ULONG   ulByteCount
 )
 {
     ASSERT(pBuffer);

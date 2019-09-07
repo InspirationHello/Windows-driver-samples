@@ -18,12 +18,13 @@ vaddrmm.sys=222
 vad2dhw.sys=222
 vaddrms.sys=222
 vadpcmex.sys=222
+vaddyn.sys=222
 
 ;;This syntax is only recognized on Windows XP and above- it is needed to install 64-bit drivers on
 ;;Windows Server 2003 Service Pack 1 and above.
 
 [Manufacturer]
-%MfgName%=MicrosoftDS,NTAMD64,NTIA64
+%MfgName%=MicrosoftDS,NTAMD64,NTIA64,NTARM
 
 ;;  For Windows Server 2003 Service Pack 1 and above, a 64-bit OS will not install a driver
 ;;  unless the Manufacturer and Models Sections explicitly show it is a driver for that platform
@@ -39,6 +40,7 @@ vadpcmex.sys=222
 %MSVAD_DS2DHW.DeviceDesc%=MSVAD_DS2DHW,*MSVADDS2DHW
 %MSVAD_DrmSimp.DeviceDesc%=MSVAD_DrmSimp,*MSVADDrmSimp
 %MSVAD_WaveExtensible.DeviceDesc%=MSVAD_WaveExtensible,*MSVADWaveExtensible
+%MSVAD_Dynamic.DeviceDesc%=MSVAD_Dynamic,*MSVADDynamic
 
 ;; This section enables installing on x64 systems
 
@@ -51,6 +53,7 @@ vadpcmex.sys=222
 %MSVAD_DS2DHW.DeviceDesc%=MSVAD_DS2DHW,*MSVADDS2DHW
 %MSVAD_DrmSimp.DeviceDesc%=MSVAD_DrmSimp,*MSVADDrmSimp
 %MSVAD_WaveExtensible.DeviceDesc%=MSVAD_WaveExtensible,*MSVADWaveExtensible
+%MSVAD_Dynamic.DeviceDesc%=MSVAD_Dynamic,*MSVADDynamic
 
 ;;  This section enables installing on Itanium systems
 
@@ -63,6 +66,20 @@ vadpcmex.sys=222
 %MSVAD_DS2DHW.DeviceDesc%=MSVAD_DS2DHW,*MSVADDS2DHW
 %MSVAD_DrmSimp.DeviceDesc%=MSVAD_DrmSimp,*MSVADDrmSimp
 %MSVAD_WaveExtensible.DeviceDesc%=MSVAD_WaveExtensible,*MSVADWaveExtensible
+%MSVAD_Dynamic.DeviceDesc%=MSVAD_Dynamic,*MSVADDynamic
+
+;; This section enables installing on ARM systems
+
+[MicrosoftDS.NTARM]
+%MSVAD_Simple.DeviceDesc%=MSVAD_Simple,*MSVADSimple
+%MSVAD_MicArray.DeviceDesc%=MSVAD_MicArray,*MSVADMicArray
+%MSVAD_Multi.DeviceDesc%=MSVAD_Multi,*MSVADMulti
+%MSVAD_AC3.DeviceDesc%=MSVAD_AC3,*MSVADAC3
+%MSVAD_DrmMult.DeviceDesc%=MSVAD_DrmMult,*MSVADDrmMult
+%MSVAD_DS2DHW.DeviceDesc%=MSVAD_DS2DHW,*MSVADDS2DHW
+%MSVAD_DrmSimp.DeviceDesc%=MSVAD_DrmSimp,*MSVADDrmSimp
+%MSVAD_WaveExtensible.DeviceDesc%=MSVAD_WaveExtensible,*MSVADWaveExtensible
+%MSVAD_Dynamic.DeviceDesc%=MSVAD_Dynamic,*MSVADDynamic
 
 [DestinationDirs]
 MSVAD_Simple.CopyList=10,system32\drivers
@@ -73,6 +90,7 @@ MSVAD_DrmMult.CopyList=10,system32\drivers
 MSVAD_DS2DHW.CopyList=10,system32\drivers
 MSVAD_DrmSimp.CopyList=10,system32\drivers
 MSVAD_WaveExtensible.CopyList=10,system32\drivers
+MSVAD_Dynamic.CopyList=10,system32\drivers
 
 
 
@@ -326,6 +344,36 @@ HKR,Drivers\wave\wdmaud.drv,Description,,%MSVAD_WaveExtensible.DeviceDesc%
 HKR,Drivers\midi\wdmaud.drv,Description,,%MSVAD_MIDI%
 HKR,Drivers\mixer\wdmaud.drv,Description,,%MSVAD_WaveExtensible.DeviceDesc%
 
+;======================================================
+; MSVAD_DYNAMIC
+;======================================================
+[MSVAD_Dynamic]
+AlsoInstall=ks.registration(ks.inf),wdmaudio.registration(wdmaudio.inf)
+CopyFiles=MSVAD_Dynamic.CopyList
+AddReg=MSVAD_Dynamic.AddReg
+
+[MSVAD_Dynamic.CopyList]
+vaddyn.sys
+
+[MSVAD_Dynamic.Interfaces]
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Topology%,MSVAD.I.Topo
+
+[MSVAD_Dynamic.AddReg]
+HKR,,AssociatedFilters,,"wdmaud,swmidi,redbook"
+HKR,,Driver,,vadsdyn.sys
+
+HKR,Drivers,SubClasses,,"wave,midi,mixer"
+
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\midi\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+
+HKR,Drivers\wave\wdmaud.drv,Description,,%MSVAD_Dynamic.DeviceDesc%
+HKR,Drivers\midi\wdmaud.drv,Description,,%MSVAD_MIDI%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%MSVAD_Dynamic.DeviceDesc%
 
 ;======================================================
 ; COMMON
@@ -541,6 +589,31 @@ StartType=3
 ErrorControl=1
 ServiceBinary=%10%\system32\drivers\vadpcmex.sys
 
+;======================================================
+; MSVAD_DYNAMIC
+;======================================================
+[MSVAD_Dynamic.NT]
+Include=ks.inf,wdmaudio.inf
+Needs=KS.Registration, WDMAUDIO.Registration
+CopyFiles=MSVAD_Dynamic.CopyList
+AddReg=MSVAD_Dynamic.AddReg
+
+[MSVAD_Dynamic.NT.Interfaces]
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_RENDER%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_CAPTURE%,%KSNAME_Wave%,MSVAD.I.Wave
+AddInterface=%KSCATEGORY_AUDIO%,%KSNAME_Topology%,MSVAD.I.Topo
+
+[MSVAD_Dynamic.NT.Services]
+AddService=msvad_Dynamic,0x00000002,msvad_Dynamic_Service_Inst
+
+[msvad_Dynamic_Service_Inst]
+DisplayName=%msvad_dynamic.SvcDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%10%\system32\drivers\vadDyn.sys
+
 
 
 ;======================================================
@@ -557,6 +630,7 @@ MSVAD_DrmMult.DeviceDesc="Microsoft Virtual Audio Device (Multiple Streams Drm) 
 MSVAD_DS2DHW.DeviceDesc="Microsoft Virtual Audio Device (DirectSound 2D HW Accelaration) (WDM)"
 MSVAD_DrmSimp.DeviceDesc="Microsoft Virtual Audio Device (Single Stream Drm) (WDM)"
 MSVAD_WaveExtensible.DeviceDesc="Microsoft Virtual Audio Device (Wave Extensible) (WDM)"
+MSVAD_Dynamic.DeviceDesc="Microsoft Virtual Audio Device (Dynamic) (WDM)"
 
 
 MSVAD.Wave.szPname="MSVAD Wave"
@@ -579,10 +653,10 @@ msvad_DrmMult.SvcDesc="Microsoft Virtual Audio Device (Multiple Streams Drm) (WD
 MSVAD_DS2DHW.SvcDesc="Microsoft Virtual Audio Device (DirectSound 2D HW Accelaration) (WDM)"
 MSVAD_DrmSimp.SvcDesc="Microsoft Virtual Audio Device (Single Stream Drm) (WDM)"
 MSVAD_WaveExtensible.SvcDesc="Microsoft Virtual Audio Device (Wave Extensible) (WDM)"
+msvad_dynamic.SvcDesc="Microsoft Virtual Audio Device (Dynamic) (WDM)"
 
 MediaCategories="SYSTEM\CurrentControlSet\Control\MediaCategories"
 
 Simple.NameGuid="{946A7B1A-EBBC-422a-A81F-F07C8D40D3B4}"
 Simple.Name="MSVAD (Simple)"
-
 

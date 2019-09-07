@@ -86,6 +86,7 @@ protected:
     ULONG                       m_ulBufferPtr;      // Pointer in buffer.
     PBOOL                       m_fFrameUsed;       // Frame usage table.
     KSPIN_LOCK                  m_FrameInUseSpinLock; // Spinlock for synch.
+    KMUTEX                      m_FileSync;         // Synchronizes file access
 
     OBJECT_ATTRIBUTES           m_objectAttributes; // Used for opening file.
 
@@ -132,8 +133,8 @@ public:
 	);
     void                        ReadData
     (
-        IN  PBYTE               pBuffer,
-        IN  ULONG               ulByteCount
+        _Inout_updates_bytes_all_(ulByteCount)  PBYTE   pBuffer,
+        _In_                                    ULONG   ulByteCount
     );
     NTSTATUS                    SetDataFormat
     (
@@ -145,8 +146,8 @@ public:
     );
     void                        WriteData
     (
-        IN  PBYTE               pBuffer,
-        IN  ULONG               ulByteCount
+        _In_reads_bytes_(ulByteCount)   PBYTE   pBuffer,
+        _In_                            ULONG   ulByteCount
     );
 
 private:
@@ -165,8 +166,8 @@ private:
     );
     NTSTATUS                    FileWrite
     (
-        IN  PBYTE               pData,
-        IN  ULONG               ulDataSize
+        _In_reads_bytes_(ulDataSize)    PBYTE   pData,
+        _In_                            ULONG   ulDataSize
     );
     NTSTATUS                    FileWriteHeader
     (

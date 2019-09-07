@@ -36,17 +36,18 @@ class CMiniportTopologyMSVAD
 
     NTSTATUS                    GetDescription
     (   
-        OUT PPCFILTER_DESCRIPTOR *  Description
+        _Out_   PPCFILTER_DESCRIPTOR *  Description
     );
 
     NTSTATUS                    DataRangeIntersection
     (   
-        IN  ULONG               PinId,
-        IN  PKSDATARANGE        ClientDataRange,
-        IN  PKSDATARANGE        MyDataRange,
-        IN  ULONG               OutputBufferLength,
-        OUT PVOID               ResultantFormat OPTIONAL,
-        OUT PULONG              ResultantFormatLength
+        _In_        ULONG           PinId,
+        _In_        PKSDATARANGE    ClientDataRange,
+        _In_        PKSDATARANGE    MyDataRange,
+        _In_        ULONG           OutputBufferLength,
+        _Out_writes_bytes_to_opt_(OutputBufferLength, *ResultantFormatLength)
+                    PVOID           ResultantFormat,
+        _Out_       PULONG          ResultantFormatLength
     );
 
     NTSTATUS                    Init
